@@ -1,22 +1,41 @@
+--- Helpers around filepaths.
+
+local logger = require("neotest-cairo.logging")
+
 local M = {}
 
----Filter directories when searching for test files
----@async
----@param name string Name of directory
----@param rel_path string Path to directory, relative to root
----@param _ string Root directory of project (absolute path)
----@return boolean
-function M.filter_dir(name, rel_path, _)
-  local ignore_dirs = { ".git", "node_modules", ".venv", "venv", ".snfoundry_cache" }
-  for _, ignore in ipairs(ignore_dirs) do
-    if name == ignore then
-      return false
+M.os_path_sep = package.config:sub(1, 1) -- "/" on Unix, "\" on Windows
+
+--- Check if a path is a root directory or at the bottom of the heirarchy if the path is relative.
+--- @param path string
+--- @return boolean
+function M.is_root_dir(path)
+  return path:match("^%a:\\?$") ~= nil or path == M.os_path_sep or path == "." or path == "." .. M.os_path_sep
+end
+
+--- Find a file upwards in the directory tree and return its path, if found.
+--- @param filename string
+--- @param start_path string
+--- @return string | nil
+function M.file_upwards(filename, start_path)
+  -- Ensure start_path is a directory
+  local start_dir = vim.fn.isdirectory(start_path) == 1 and start_path
+    or vim.fn.fnamemodify(start_path, ":h")
+
+  while not M.is_root_dir(start_dir) do
+    logger.debug("Searching for " .. filename .. " in " .. start_dir)
+
+    local try_path = start_dir .. M.os_path_sep .. filename
+    if vim.fn.filereadable(try_path) == 1 then
+      logger.debug("Found " .. filename .. " at " .. try_path)
+      return try_path
     end
+
+    -- Go up one directory
+    start_dir = vim.fn.fnamemodify(start_dir, ":h")
   end
-  if not (rel_path:sub(1, 3) == "src" or rel_path:sub(1, 5) == "tests") then
-    return false
-  end
-  return true
+
+  return nil
 end
 
 return M

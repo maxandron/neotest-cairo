@@ -2,7 +2,6 @@
 --- Neotest interface: https://github.com/nvim-neotest/neotest/blob/master/lua/neotest/adapters/interface.lua
 
 local async = require("neotest.async")
-local lib = require("neotest.lib")
 local logger = require("neotest-cairo.logging")
 
 -- Temporarily needed because cairo is not in plenary which neotest relies on for filetype detection
@@ -22,9 +21,10 @@ local Adapter = { name = "neotest-cairo" }
 ---@param dir string @Directory to treat as cwd
 ---@return string | nil @Absolute root dir of test suite
 function Adapter.root(dir)
-  -- Currently will match only if Scarb.toml is in the current working directory.
-  -- (will not match if it's part of a monorepo or in a parent directory)
-  return lib.files.match_root_pattern("Scarb.toml")(dir)
+  -- To make test finding flexible, we simply return the current directory as the root and
+  -- then set the CWD before running the test command.
+  -- This way, neotest can search for tests in any directory.
+  return dir
 end
 
 ---Filter directories when searching for test files
@@ -34,7 +34,13 @@ end
 ---@param root string Root directory of project (absolute path)
 ---@return boolean
 function Adapter.filter_dir(name, rel_path, root)
-  return require("neotest-cairo.files").filter_dir(name, rel_path, root)
+  local ignore_dirs = { ".git", "node_modules", ".venv", "venv", ".snfoundry_cache" }
+  for _, ignore in ipairs(ignore_dirs) do
+    if name == ignore then
+      return false
+    end
+  end
+  return true
 end
 
 ---@param file_path string
@@ -55,6 +61,7 @@ end
 ---@param args neotest.RunArgs
 ---@return neotest.RunSpec | nil
 function Adapter.build_spec(args)
+  local lib = require("neotest.lib")
   --- The tree object, describing the AST-detected tests and their positions.
   local tree = args.tree
 
@@ -164,6 +171,7 @@ end
 --- @param tree neotest.Tree
 --- @return table<string, neotest.Result> | nil
 function Adapter.results(spec, result, tree)
+  local lib = require("neotest.lib")
   local output = async.fn.readfile(result.output)
 
   -- Get package name from Scarb.toml

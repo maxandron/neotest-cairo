@@ -1,3 +1,4 @@
+local files = require("neotest-cairo.files")
 local lib = require("neotest.lib")
 
 local M = {}
@@ -37,21 +38,34 @@ function M.detect_tests(file_path)
   return lib.treesitter.parse_positions(file_path, M.tests_query, {})
 end
 
+--- Check if a file is a cairo test file
+---@param file_path string
+---@return boolean
 function M.is_test_file(file_path)
-  -- TODO: ignore files that are in the root directory
   if file_path == nil then
     return false
   end
+
   if not file_path:match("%.cairo$") then
     return false
   end
+
+  local scarb_path = files.file_upwards("Scarb.toml", file_path)
+  if not scarb_path then
+    return false
+  end
+  local root = vim.fn.fnamemodify(scarb_path, ":h") -- remove the file name
+
+  -- Ensure the file is under src/ or tests/ under root
+  local relative_to_root = string.sub(file_path, #root + 2)
+  if relative_to_root:sub(1, 3) ~= "src" and relative_to_root:sub(1, 5) ~= "tests" then
+    return false
+  end
+
   -- #[cfg(test)] can appear in any cairo file. And I suppose pattern matching will not be much slower than
   -- reading the file and using treesitter to parse it.
-  -- Still, since there is no convention for test files in cairo - this can be a bit slow for directories with many files.
-  --TODO: if the file is already loaded into a buffer maybe it's better to read from there
-  --TODO: maybe it's worth just running "detect_tests" on the file and if it returns something then it's a test file
-  --TODO: but also since it's async maybe it's not much of a problem
-  local content = lib.files.read(file_path)
+  -- Still, since there is no convention for test files in cairo - this may become slow for directories with many files.
+  local content = io.open(file_path):read("*a")
   return string.match(content, "#%[cfg%(test%)]") ~= nil
 end
 
