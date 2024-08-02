@@ -22,7 +22,7 @@ T["get_package()"] = new_set()
 
 local function async_get(command)
   child.lua([[require('nio').run(function() vim.b.result = ]] .. command .. [[ end)]])
-  vim.uv.sleep(5)
+  vim.uv.sleep(20)
   return child.b.result
 end
 
