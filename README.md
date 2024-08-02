@@ -69,9 +69,40 @@ There are none.
 
 Open an issue if you would like to configure something.
 
+## ⛑️ Tips & troubleshooting
+
+### Issues with setting up or using the adapter
+
+You can run `:checkhealth neotest-cairo` to review common issues. If you need
+help, please open a discussion
+[here](https://github.com/maxandron/neotest-cairo/discussions/new?category=q-a).
+
+You can also enable logging to further inspect what's going on under the hood.
+Neotest-cairo piggybacks on the Neotest logger. You can enable it like so:
+
+```lua
+require("neotest.logging"):set_level(vim.log.levels.INFO)
+```
+
+⚠️ Please note that this could cause tests to run slower, so don't forget to
+remove this setting once you have resolved your issue!
+
+Lower the log level further to `DEBUG` to get even more information. The lowest
+level is `TRACE`, but is not used by this adapter and is only useful when
+debugging issues with Neotest.
+
+You can get ahold of the log file's path using
+`require("neotest.logging"):get_filename()`, which usually points to your
+`~/.local/state/nvim/neotest.log`.
+
+The logfile tends to be ginormous and if you are only looking for neotest-cairo
+related entries, you can search for the `[neotest-cairo]` prefix.
+
 ## 🚀 Shoutout
 
 neotest-cairo is heavily inspired by [neotest-golang](https://github.com/fredrikaverpil/neotest-golang).
 
-Having it as a reference made it much easier to write this adapter.
+Having it as a reference made it much easier to write this adapter. The code is clean and well documented.
+
+Thank you!
 
