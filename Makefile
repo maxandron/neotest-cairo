@@ -1,9 +1,9 @@
 ci:
 	echo "===> Running ci"
-	@make deps/mini.nvim
+	@make deps
+	@make test
 	@make fmt
 	@make lint
-	@make test
 
 fmt:
 	echo "===> Formatting"
@@ -15,7 +15,7 @@ lint:
 
 test:
 	echo "===> Testing"
-	@nvim -l tests/minit.lua minitest
+	@nvim -l tests/minit.lua --minitest
 
 deps:
 	@nvim -l tests/minit.lua

@@ -2,3 +2,6 @@ std="vim"
 
 [lints]
 mixed_table="allow"
+
+[config]
+empty_if = { comments_count = true }

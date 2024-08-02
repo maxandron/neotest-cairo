@@ -4,20 +4,22 @@ local logger = require("neotest-cairo.logging")
 
 local M = {}
 
----@param toml_path string The path to the Scarb.toml file.
+--- Get the package name from the Scarb.toml file.
 ---@async
+---@param toml_path string The path to the Scarb.toml file.
+---@return string
 function M.get_package(toml_path)
   local toml = lib.files.read(toml_path)
-  local package_name = toml:match("%[package].-name[^%w]-\"(%a+)\"")
+  local package_name = toml:match('%[package].-name[^%w]-"(%a+)"')
   assert(package_name, "package name not found in Scarb.toml")
 
   return package_name
 end
 
 --- Build the runspec, which describes what command(s) are to be executed.
+---@async
 ---@param args neotest.RunArgs
 ---@return neotest.RunSpec | nil
----@async
 function M.build_spec(args)
   --- The tree object, describing the AST-detected tests and their positions.
   local tree = args.tree
@@ -71,6 +73,7 @@ function M.build_spec(args)
   elseif pos.type == "file" then
     filter = filter.gsub(filter, "%.cairo$", "")
   elseif pos.type == "dir" then
+    -- No need to do anything
   else
     logger.error("position type not supported:" .. pos.type)
   end

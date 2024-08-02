@@ -1,8 +1,6 @@
 --- This is the main entry point for the neotest-cairo adapter. It follows the
 --- Neotest interface: https://github.com/nvim-neotest/neotest/blob/master/lua/neotest/adapters/interface.lua
 
-local async = require("neotest.async")
-
 -- Temporarily needed because cairo is not in plenary which neotest relies on for filetype detection
 require("plenary.filetype").add_table({
   extension = {
@@ -70,41 +68,43 @@ end
 --- @return table<string, neotest.Result> | nil
 function Adapter.results(spec, result, tree)
   local lib = require("neotest.lib")
+  local async = require("neotest.async")
+  local runspec = require("neotest-cairo.runspec")
+  local results = require("neotest-cairo.results")
+
   local output = async.fn.readfile(result.output)
 
-  -- Get package name from Scarb.toml
-  --TODO: export into a separate function
-  local scarb = lib.files.read("Scarb.toml")
-  --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
-  local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
-  local cwd = async.fn.getcwd()
+  local parsed_output = results.parse_output(output)
 
+  -- Currently the position of any will do for finding the package name
+  -- because we don't support running tests from multiple packages yet
+  local package_name = runspec.get_package(spec.cwd .. lib.files.path.sep .. "Scarb.toml")
+
+  --- Maps pos.id() to the test results
   --- @return table<string, neotest.Result>
-  local results = {}
-
-  local parsed_output = require("neotest-cairo.results").parse_output(output)
+  local pos_results = {}
 
   for _, node in tree:iter_nodes() do
     --- @type neotest.Position
     local pos = node:data()
     if pos.type == "test" then
       -- +2 to include the slash and because lua is 1-indexed
-      local filter = pos.id:sub(#cwd + 2, #pos.id)
+      local filter = pos.id:sub(#spec.cwd, #pos.id)
       filter = filter:gsub("^src", package_name)
       filter = filter:gsub("/", "::")
       filter = filter.gsub(filter, "%.cairo::", "::")
 
-      results[pos.id] = parsed_output[filter]
+      pos_results[pos.id] = parsed_output[filter]
     end
   end
 
-  -- Maps pos.id() to the test results
-  return results
+  return pos_results
 end
 
 setmetatable(Adapter, {
-  __call = function(_, opts)
-    -- Adapter.options = options.setup(opts)
+  --- Currently there are no configuration options.
+  --- The call is here to allow for future expansion and to keep the interface consistent with other adapters.
+  __call = function(_, _)
     return Adapter
   end,
 })

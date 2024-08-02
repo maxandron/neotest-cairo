@@ -1,10 +1,11 @@
 --- Helpers around filepaths.
 
+local lib = require("neotest.lib")
 local logger = require("neotest-cairo.logging")
 
 local M = {}
 
-M.os_path_sep = package.config:sub(1, 1) -- "/" on Unix, "\" on Windows
+M.os_path_sep = lib.files.path.sep
 
 --- Check if a path is a root directory or at the bottom of the heirarchy if the path is relative.
 --- @param path string
@@ -19,8 +20,7 @@ end
 --- @return string | nil
 function M.file_upwards(filename, start_path)
   -- Ensure start_path is a directory
-  local start_dir = vim.fn.isdirectory(start_path) == 1 and start_path
-    or vim.fn.fnamemodify(start_path, ":h")
+  local start_dir = vim.fn.isdirectory(start_path) == 1 and start_path or vim.fn.fnamemodify(start_path, ":h")
 
   while not M.is_root_dir(start_dir) do
     logger.debug("Searching for " .. filename .. " in " .. start_dir)
