@@ -18,39 +18,45 @@ local T = new_set({
   },
 })
 
-T["is_test_file"] = new_set()
+T["is_test_file()"] = new_set()
 
-T["is_test_file"]["no path"] = function()
+T["is_test_file()"]["no path"] = function()
   local result = child.lua_get("M.is_test_file()")
   eq(result, false)
 end
 
-T["is_test_file"]["not a cairo file"] = function()
+T["is_test_file()"]["not a cairo file"] = function()
   local result = child.lua_get("M.is_test_file('/opt/wow.lua')")
   eq(result, false)
 end
 
-T["is_test_file"]["not in a project"] = function()
+T["is_test_file()"]["not in a project"] = function()
   child.b.path = vim.fn.getcwd() .. "/tests/files/example.cairo"
   local result = child.lua_get("M.is_test_file(vim.b.path)")
   eq(result, false)
 end
 
-T["is_test_file"]["not in src or tests"] = function()
+T["is_test_file()"]["not in src or tests"] = function()
   child.b.path = vim.fn.getcwd() .. "/tests/files/projroot/example.cairo"
   local result = child.lua_get("M.is_test_file(vim.b.path)")
   eq(result, false)
 end
 
-T["is_test_file"]["does not contain cfg(test)"] = function()
+local function async_get(command)
+  child.lua([[require('nio').run(function() vim.b.result = ]] .. command .. [[ end)]])
+  vim.uv.sleep(5)
+  return child.b.result
+end
+
+T["is_test_file()"]["does not contain cfg(test)"] = function()
   child.b.path = vim.fn.getcwd() .. "/tests/files/projroot/src/example.cairo"
-  local result = child.lua_get("M.is_test_file(vim.b.path)")
+  local result = async_get("M.is_test_file(vim.b.path)")
   eq(result, false)
 end
 
-T["is_test_file"]["contains cfg(test)"] = function()
+T["is_test_file()"]["contains cfg(test)"] = function()
   child.b.path = vim.fn.getcwd() .. "/tests/files/projroot/tests/example.cairo"
-  local result = child.lua_get("M.is_test_file(vim.b.path)")
+  local result = async_get("M.is_test_file(vim.b.path)")
   eq(result, true)
 end
 

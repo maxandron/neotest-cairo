@@ -1,7 +1,5 @@
 [package]
 version = "0.1.0"
-whatever = "abc"
-name = "projname"
 
 [dependencies]
 starknet = "2.6.4"

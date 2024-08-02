@@ -27,7 +27,7 @@ local T = new_set({
       -- Restart child process with custom 'init.lua' script
       child.restart({ "-u", "tests/minit.lua" })
       -- Load tested plugin
-      child.lua([[M = require('neotest-cairo.snforge')]])
+      child.lua([[M = require('neotest-cairo.results')]])
     end,
     -- This will be executed one after all tests from this set are finished
     post_once = child.stop,

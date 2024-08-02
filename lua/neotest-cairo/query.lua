@@ -65,7 +65,7 @@ function M.is_test_file(file_path)
   -- #[cfg(test)] can appear in any cairo file. And I suppose pattern matching will not be much slower than
   -- reading the file and using treesitter to parse it.
   -- Still, since there is no convention for test files in cairo - this may become slow for directories with many files.
-  local content = io.open(file_path):read("*a")
+  local content = lib.files.read(file_path)
   return string.match(content, "#%[cfg%(test%)]") ~= nil
 end
 

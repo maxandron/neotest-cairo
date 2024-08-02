@@ -12,6 +12,7 @@ local test_query_pattern = "%[([FPI][AAG][ISN][LSO]R?E?)] ([%w%p]+) *%(?g?a?s?:?
 -- map between snforge filter names and neotest results
 ---@param output string[] The output from running snforge test. Split into lines.
 ---@return table<string, neotest.Result>
+---@async
 function M.parse_output(output)
   local test_results = {}
 
