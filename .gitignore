@@ -7,3 +7,6 @@
 foo.*
 node_modules
 tt.*
+
+# cairo stuff
+.snfoundry_cache

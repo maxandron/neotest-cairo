@@ -4,7 +4,7 @@ whatever = "abc"
 name = "projname"
 
 [dependencies]
-starknet = "2.6.4"
+starknet = "2.6.3"
 openzeppelin = { git = "https://github.com/OpenZeppelin/cairo-contracts.git", tag = "v0.11.0" }
 
 [dev-dependencies]

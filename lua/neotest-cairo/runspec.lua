@@ -10,7 +10,7 @@ local M = {}
 ---@return string
 function M.get_package(toml_path)
   local toml = lib.files.read(toml_path)
-  local package_name = toml:match("%[package].-name[^%w]-\"(%a+)\"")
+  local package_name = toml:match('%[package].-name[^%w]-"(%a+)"')
   assert(package_name, "package name not found in Scarb.toml")
 
   return package_name

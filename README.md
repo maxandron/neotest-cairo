@@ -1,10 +1,10 @@
-#  neotest-cairo
+# neotest-cairo
 
 Neotest adapter for running Cairo tests in Neovim.
 
-![image]()
+![image](https://github.com/user-attachments/assets/d85348c5-b706-4f57-84ea-508d31e6f475)
 
-## 🏗  WIP
+## 🏗 WIP
 
 Although the adapter works, it is still early in development and may have some rough edges.
 
