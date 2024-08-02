@@ -89,7 +89,7 @@ function Adapter.results(spec, result, tree)
     local pos = node:data()
     if pos.type == "test" then
       -- +2 to include the slash and because lua is 1-indexed
-      local filter = pos.id:sub(#spec.cwd, #pos.id)
+      local filter = pos.id:sub(#spec.cwd + 2, #pos.id)
       filter = filter:gsub("^src", package_name)
       filter = filter:gsub("/", "::")
       filter = filter.gsub(filter, "%.cairo::", "::")
