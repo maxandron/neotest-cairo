@@ -13,33 +13,10 @@ lint:
 	echo "===> Linting"
 	selene lua/
 
-test: deps/mini.nvim
+test:
 	echo "===> Testing"
-	nvim --headless --noplugin -u ./scripts/minimal_init.lua -c "lua MiniTest.run()"
+	@nvim -l tests/minit.lua minitest
 
-deps: deps/mini.nvim deps/neotest deps/nvim-nio deps/nvim-treesitter deps/plenary.nvim
+deps:
+	@nvim -l tests/minit.lua
 
-deps/mini.nvim:
-	echo "===> Cloning mini.nvim"
-	@mkdir -p deps
-	git clone --filter=blob:none https://github.com/echasnovski/mini.nvim $@
-
-deps/neotest:
-	echo "===> Cloning neotest"
-	@mkdir -p deps
-	git clone --filter=blob:none https://github.com/nvim-neotest/neotest $@
-
-deps/nvim-nio:
-	echo "===> Cloning nvim-nio"
-	@mkdir -p deps
-	git clone --filter=blob:none https://github.com/nvim-neotest/nvim-nio $@
-
-deps/nvim-treesitter:
-	echo "===> Cloning nvim-treesitter"
-	@mkdir -p deps
-	git clone --filter=blob:none https://github.com/nvim-treesitter/nvim-treesitter $@
-
-deps/plenary.nvim:
-	echo "===> Cloning plenary.nvim"
-	@mkdir -p deps
-	git clone --filter=blob:none https://github.com/nvim-lua/plenary.nvim $@

@@ -1,51 +1,29 @@
-local filetype = require("plenary.filetype")
-local lib = require("neotest.lib")
+--- This is the main entry point for the neotest-cairo adapter. It follows the
+--- Neotest interface: https://github.com/nvim-neotest/neotest/blob/master/lua/neotest/adapters/interface.lua
 
----@class neotest.Adapter
-local adapter = { name = "neotest-cairo" }
+local async = require("neotest.async")
+local lib = require("neotest.lib")
+local logger = require("neotest-cairo.logging")
 
 -- Temporarily needed because cairo is not in plenary which neotest relies on for filetype detection
--- TODO: move to setup
-filetype.add_table({
+require("plenary.filetype").add_table({
   extension = {
     cairo = "cairo",
   },
 })
 
----Given a file path, parse all the tests within it.
----@async
----@param file_path string Absolute file path
----@return neotest.Tree | nil
-function adapter.discover_positions(file_path)
-  local query = [[
-            ((mod_item
-                name: (identifier) @namespace.name
-                ) @namespace.definition)
-
-            ((attribute_item
-                (identifier) @attribute
-                (#eq? @attribute "test")
-              )
-              (attribute_item
-                (identifier)
-              )*
-              .
-              (function_definition
-                (identifier) @test.name
-                (block)
-              ) @test.definition)
-        ]]
-
-  ---@diagnostic disable-next-line: missing-fields
-  return lib.treesitter.parse_positions(file_path, query, {})
-end
+--- See neotest.Adapter for the full interface.
+--- @class CairoAdapter : neotest.Adapter
+local Adapter = { name = "neotest-cairo" }
 
 ---Find the project root directory given a current directory to work from.
 ---Should no root be found, the adapter can still be used in a non-project context if a test file matches.
 ---@async
 ---@param dir string @Directory to treat as cwd
 ---@return string | nil @Absolute root dir of test suite
-function adapter.root(dir)
+function Adapter.root(dir)
+  -- Currently will match only if Scarb.toml is in the current working directory.
+  -- (will not match if it's part of a monorepo or in a parent directory)
   return lib.files.match_root_pattern("Scarb.toml")(dir)
 end
 
@@ -53,46 +31,176 @@ end
 ---@async
 ---@param name string Name of directory
 ---@param rel_path string Path to directory, relative to root
----@param root string Root directory of project
+---@param root string Root directory of project (absolute path)
 ---@return boolean
-function adapter.filter_dir(name, rel_path, root)
-  return true
+function Adapter.filter_dir(name, rel_path, root)
+  return require("neotest-cairo.files").filter_dir(name, rel_path, root)
 end
 
 ---@param file_path string
 ---@return boolean
-function adapter.is_test_file(file_path)
-  if file_path == nil then
-    return false
-  end
-  -- TODO: looks for cfg(test) using treesitter
-  return string.match(file_path, ".*_t.cairo") ~= nil
+function Adapter.is_test_file(file_path)
+  return require("neotest-cairo.query").is_test_file(file_path)
 end
 
+---Given a file path, parse all the tests within it.
+---@async
+---@param file_path string Absolute file path
+---@return neotest.Tree | nil
+function Adapter.discover_positions(file_path)
+  return require("neotest-cairo.query").detect_tests(file_path)
+end
+
+--- Build the runspec, which describes what command(s) are to be executed.
 ---@param args neotest.RunArgs
 ---@return neotest.RunSpec | nil
-function adapter.build_spec(args)
-  local node = args.tree:data()
-  return {
-    command = "snforge test",
-    cwd = lib.files.match_root_pattern("Scarb.toml")(node.path),
+function Adapter.build_spec(args)
+  --- The tree object, describing the AST-detected tests and their positions.
+  local tree = args.tree
+
+  if not tree then
+    logger.error("Unexpectedly did not receive a neotest.Tree.")
+    return
+  end
+
+  --- The position object, describing the current directory, file or test.
+  local pos = tree:data()
+
+  -- Below is the main logic of figuring out how to execute tests. In short,
+  -- a "runspec" is defined for each command to execute.
+  -- Neotest also distinguishes between different "position types":
+  -- - "dir": A directory of tests
+  -- - "file": A single test file
+  -- - "namespace": A set of tests, collected under the same namespace
+  -- - "test": A single test
+  --
+  -- If a valid runspec is built and returned from this function, it will be
+  -- executed by Neotest. But if, for some reason, this function returns nil,
+  -- Neotest will call this function again, but using the next position type
+  -- (in this order: dir, file, namespace, test). This gives the ability to
+  -- have fallbacks.
+  -- For example, if a runspec cannot be built for a file of tests, we can
+  -- instead try to build a runspec for each individual test file. The end
+  -- result would in this case produce multiple commands to execute (for each
+  -- test) rather than one command for the file.
+  -- The idea here is not to have such fallbacks take place in the future, but
+  -- while this adapter is being developed, it can be useful to have such
+  -- functionality.
+
+  local filter = ""
+  if pos.type == "test" then
+    -- Get package name from Scarb.toml
+    --TODO: export into a separate function
+    local scarb = lib.files.read("Scarb.toml")
+    --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
+    local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
+
+    local cwd = async.fn.getcwd()
+    -- +2 to include the slash and because lua is 1-indexed
+    filter = pos.id:sub(#cwd + 2, #pos.id)
+    filter = filter:gsub("^src", package_name)
+    filter = filter:gsub("/", "::")
+    filter = filter.gsub(filter, "%.cairo::", "::")
+
+    filter = "-e " .. filter
+  elseif pos.type == "namespace" then
+    -- Get package name from Scarb.toml
+    --TODO: export into a separate function
+    local scarb = lib.files.read("Scarb.toml")
+    --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
+    local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
+
+    local cwd = async.fn.getcwd()
+    -- +2 to include the slash and because lua is 1-indexed
+    filter = pos.id:sub(#cwd + 2, #pos.id)
+    filter = filter:gsub("^src", package_name)
+    filter = filter:gsub("/", "::")
+    filter = filter.gsub(filter, "%.cairo::", "::")
+  elseif pos.type == "file" then
+    -- Get package name from Scarb.toml
+    --TODO: export into a separate function
+    local scarb = lib.files.read("Scarb.toml")
+    --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
+    local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
+
+    local cwd = async.fn.getcwd()
+    -- +2 to include the slash and because lua is 1-indexed
+    filter = pos.id:sub(#cwd + 2, #pos.id)
+    filter = filter:gsub("^src", package_name)
+    filter = filter:gsub("/", "::")
+    filter = filter.gsub(filter, "%.cairo$", "")
+  elseif pos.type == "dir" then
+    -- Get package name from Scarb.toml
+    --TODO: export into a separate function
+    local scarb = lib.files.read("Scarb.toml")
+    --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
+    local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
+
+    local cwd = async.fn.getcwd()
+    -- +2 to include the slash and because lua is 1-indexed
+    filter = pos.id:sub(#cwd + 2, #pos.id)
+    filter = filter:gsub("^src", package_name)
+    filter = filter:gsub("/", "::")
+  else
+    logger.error("position type not supported:" .. pos.type)
+  end
+
+  -- TODO: currently only runs all tests, regardless of the position type.
+  local runspec = {
+    command = "snforge test --color never " .. filter,
     context = {
-      file = node.path,
+      file = pos.path,
     },
   }
+  P("runspec", runspec)
+  return runspec
 end
 
----@async
----@param spec neotest.RunSpec
----@param result neotest.StrategyResult
----@param tree neotest.Tree
----@return table<string, neotest.Result>
-function adapter.results(spec, result, tree)
-  error("not implemented")
+--- Process the test command output and result. Populate test outcome into the
+--- Neotest internal tree structure.
+--- @async
+--- @param spec neotest.RunSpec
+--- @param result neotest.StrategyResult
+--- @param tree neotest.Tree
+--- @return table<string, neotest.Result> | nil
+function Adapter.results(spec, result, tree)
+  local output = async.fn.readfile(result.output)
+
+  -- Get package name from Scarb.toml
+  --TODO: export into a separate function
+  local scarb = lib.files.read("Scarb.toml")
+  --TODO: not very robust - maybe parsing the toml file would be better. Maybe with treesitter?
+  local package_name = scarb:match("%[package]\nname = \"(%a+)\"")
+  local cwd = async.fn.getcwd()
+
+  --- @return table<string, neotest.Result>
+  local results = {}
+
+  local parsed_output = require("neotest-cairo.snforge").parse_output(output)
+
+  for _, node in tree:iter_nodes() do
+    --- @type neotest.Position
+    local pos = node:data()
+    if pos.type == "test" then
+      -- +2 to include the slash and because lua is 1-indexed
+      local filter = pos.id:sub(#cwd + 2, #pos.id)
+      filter = filter:gsub("^src", package_name)
+      filter = filter:gsub("/", "::")
+      filter = filter.gsub(filter, "%.cairo::", "::")
+
+      results[pos.id] = parsed_output[filter]
+    end
+  end
+
+  -- Maps pos.id() to the test results
+  return results
 end
 
-setmetatable(adapter, {
-  __call = function(_, opts) end,
+setmetatable(Adapter, {
+  __call = function(_, opts)
+    -- Adapter.options = options.setup(opts)
+    return Adapter
+  end,
 })
 
-return adapter
+return Adapter

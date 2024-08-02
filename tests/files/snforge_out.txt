@@ -1,0 +1,34 @@
+⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a83f36b23f1af6e160288962be4a2701c3ecbcda                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a3391dce5bdda51c63237032e6cfc64fb7a346d4                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a83f36b23f1af6e160288962be4a2701c3ecbcda                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a3391dce5bdda51c63237032e6cfc64fb7a346d4                                                           0s[2Kwarning: Unused variable. Consider ignoring by prefixing with `_`.
+ --> /project/src/tests/bridge_t.cairo:817:13
+        let collection3 = starknet::contract_address_const::<'collection3'>();
+            ^*********^
+
+⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a83f36b23f1af6e160288962be4a2701c3ecbcda                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a3391dce5bdda51c63237032e6cfc64fb7a346d4                                                           0s[2K   Compiling lib(projname) projname v0.1.0 (/project/Scarb.toml)
+   Compiling starknet-contract(projname) projname v0.1.0 (/project/Scarb.toml)
+    Finished release target(s) in 10 seconds
+
+
+Collected 5 test(s) from projname package
+Running 5 test(s) from src/
+[FAIL] projname::byte_array_extra::tests::from_span_felt252_felt252
+
+Failure data:
+    "assertion `e == "hello!"` failed: String mismatch
+    e: "hello"
+    "hello!": "hello!""
+
+[PASS] projname::byte_array_extra::tests::bytearray_long_serialize (gas: ~1)
+[PASS] projname::byte_array_extra::tests::from_span_felt252_bytearray_shortstring (gas: ~2)
+[PASS] projname::byte_array_extra::tests::from_span_felt252_none (gas: ~1)
+[FAIL] projname::byte_array_extra::tests::from_felt252
+
+Failure data:
+    "assertion `e.pending_word_len == 19` failed: Wrong pending word len
+    e.pending_word_len: 18
+    19: 19"
+
+Tests: 3 passed, 2 failed, 0 skipped, 0 ignored, 42 filtered out
+
+Failures:
+    projname::byte_array_extra::tests::from_span_felt252_felt252
+    projname::byte_array_extra::tests::from_felt252

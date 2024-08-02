@@ -1,0 +1,12 @@
+⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a83f36b23f1af6e160288962be4a2701c3ecbcda                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a3391dce5bdda51c63237032e6cfc64fb7a346d4                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a83f36b23f1af6e160288962be4a2701c3ecbcda                                                           0s[2K⠁ git clone --local --config core.autocrlf=false --recurse-submodules /Users/ron/Library/Caches/com.swmansion.scarb/r 0s[2K⠁ git reset --hard a3391dce5bdda51c63237032e6cfc64fb7a346d4                                                           0s[2Kerror: Plugin diagnostic: Unsupported attribute.
+ --> /Users/ron/work/ark-project-bridge-audit/apps/blockchain/starknet/src/byte_array_extra.cairo:42:5
+    #[ignored]
+    ^********^
+
+warning: Unused variable. Consider ignoring by prefixing with `_`.
+ --> /Users/ron/work/ark-project-bridge-audit/apps/blockchain/starknet/src/tests/bridge_t.cairo:817:13
+        let collection3 = starknet::contract_address_const::<'collection3'>();
+            ^*********^
+
+Error: Failed to compile test artifact, for detailed information go through the logs above
+[ERROR] Failed to build test artifacts with Scarb: `scarb` exited with error
